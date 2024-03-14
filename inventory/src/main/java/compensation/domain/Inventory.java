@@ -21,17 +21,17 @@ public class Inventory {
 
     private Long stock;
 
-    @PostPersist
-    public void onPostPersist() {
-        OutOfStock outOfStock = new OutOfStock(this);
-        outOfStock.publishAfterCommit();
-    }
+    // @PostPersist
+    // public void onPostPersist() {
+    //     OutOfStock outOfStock = new OutOfStock(this);
+    //     outOfStock.publishAfterCommit();
+    // }
 
-    @PostUpdate
-    public void onPostUpdate() {
-        StockDecreased stockDecreased = new StockDecreased(this);
-        stockDecreased.publishAfterCommit();
-    }
+    // @PostUpdate
+    // public void onPostUpdate() {
+    //     StockDecreased stockDecreased = new StockDecreased(this);
+    //     stockDecreased.publishAfterCommit();
+    // }
 
     public static InventoryRepository repository() {
         InventoryRepository inventoryRepository = InventoryApplication.applicationContext.getBean(
@@ -40,35 +40,24 @@ public class Inventory {
         return inventoryRepository;
     }
 
-    //<<< Clean Arch / Port Method
     public static void decreaseStock(OrderPlaced orderPlaced) {
-        //implement business logic here:
 
-        /** Example 1:  new item 
-        Inventory inventory = new Inventory();
-        repository().save(inventory);
+        repository().findById(Long.valueOf(orderPlaced.getProductId())).ifPresent(inventory->{
+            if(inventory.getStock() >= orderPlaced.getQty()){
+                inventory.setStock(inventory.getStock() - orderPlaced.getQty()); 
+                repository().save(inventory);
 
-        StockDecreased stockDecreased = new StockDecreased(inventory);
-        stockDecreased.publishAfterCommit();
-        OutOfStock outOfStock = new OutOfStock(inventory);
-        outOfStock.publishAfterCommit();
-        */
+                StockDecreased stockDecreased = new StockDecreased(inventory);
+                stockDecreased.publishAfterCommit();
 
-        /** Example 2:  finding and process
-        
-        repository().findById(orderPlaced.get???()).ifPresent(inventory->{
+            }else{
+                OutOfStock outOfStock = new OutOfStock(inventory);
+                outOfStock.setOrderId(orderPlaced.getId()); 
+                outOfStock.publishAfterCommit();
+            }
             
-            inventory // do something
-            repository().save(inventory);
-
-            StockDecreased stockDecreased = new StockDecreased(inventory);
-            stockDecreased.publishAfterCommit();
-            OutOfStock outOfStock = new OutOfStock(inventory);
-            outOfStock.publishAfterCommit();
-
-         });
-        */
-
+        });
+        
     }
 
     //>>> Clean Arch / Port Method
